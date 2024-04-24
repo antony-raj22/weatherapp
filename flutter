@@ -1,0 +1,149 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  runApp(WeatherApp());
+}
+
+class WeatherApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Weather App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _preferredLocation = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferredLocation();
+  }
+
+  // Load preferred location from shared preferences
+  Future<void> _loadPreferredLocation() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _preferredLocation = prefs.getString('preferred_location') ?? '';
+    });
+  }
+
+  // Save preferred location to shared preferences
+  Future<void> _savePreferredLocation(String location) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('preferred_location', location);
+    setState(() {
+      _preferredLocation = location;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Weather App'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Preferred Location:',
+              style: TextStyle(fontSize: 20),
+            ),
+            SizedBox(height: 10),
+            Text(
+              _preferredLocation.isNotEmpty ? _preferredLocation : 'No location selected',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsScreen extends StatelessWidget {
+  final TextEditingController _locationController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter Preferred Location:',
+              style: TextStyle(fontSize: 20),
+            ),
+            TextField(
+              controller: _locationController,
+              decoration: InputDecoration(
+                hintText: 'E.g., New York, London',
+              ),
+            ),
+            SizedBox(height: 20),
+            RaisedButton(
+              child: Text('Save'),
+              onPressed: () {
+                String location = _locationController.text;
+                // Validate and save location
+                if (location.isNotEmpty) {
+                  Navigator.pop(context);
+                  _saveLocation(context, location);
+                } else {
+                  // Show error message for empty location
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please enter a location.'),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Save location to shared preferences
+  Future<void> _saveLocation(BuildContext context, String location) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('preferred_location', location);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Location saved successfully.'),
+      ),
+    );
+  }
+}
